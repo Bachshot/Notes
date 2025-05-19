@@ -31,19 +31,24 @@ classdef solve
             %% Labor supply
             fprintf('------------Solving for Labor Supply.------------\n\n')
 
-            opts = optimset('TolX', 1e-6, 'Display', 'off');  
+            opts = optimset('TolX', 1e-6, 'Display', 'off');  %
             
             for h1 = 1:klen
                 for h2 = 1:klen
                     for h3 = 1:Alen
                         for s = 1:par.slen
-                            y_func = @(n) par.w(s) * Agrid(h3) * (kgrid(h1)^alpha) * n^(1 - alpha);
-                            i = kgrid(h2) - (1 - delta) * kgrid(h1);
-                            fn = @(n) ((y_func(n) - par.lambda * y_func(n)^(1 - par.tau) - i)^(-sigma)) ...
-                                    * (par.w(s) * Agrid(h3) * (1 - alpha) * (kgrid(h1)^alpha) * n^(-alpha)) ...
-                                    + gamma * (1 - n)^(1 / nu);
+                            k = kgrid(h1);
+                            kp = kgrid(h2);
+                            A = Agrid(h3);
+                            w = par.w(s);
+                            i = kp - (1 - delta) * k;
             
-                            n0(h1,h2,h3,s) = fminbnd(fn, 0.001, 0.999, opts);
+                            fn = @(n) ...
+                                -model.utility(w * A * k^alpha * n^(1 - alpha) - ...
+                                par.lambda * (w * A * k^alpha * n^(1 - alpha))^(1 - par.tau) - i, ...
+                                n, par, 1);  %% g = 1 to decouple it
+            
+                            n0(h1,h2,h3,s) = fminbnd(fn, 0.001, 0.99, opts);  %% tighten domain
                         end
                     end
                 end
@@ -71,7 +76,7 @@ classdef solve
                             g = max(mean(T(:)), 1e-4);
 
                             feasible = (c > 1e-6) & (i >= 0);
-                            vall = -Inf(length(kgrid), 1); %% 
+                            vall = -Inf(length(kgrid), 1); %% ✅ required init
 
                             if any(feasible)
                                 cvec = c(feasible);

@@ -13,7 +13,11 @@
 classdef my_graph
     methods(Static)
         %% Plot value and policy functions.
-        
+        function g = gini_index(y)
+            y = sort(y(:));
+            n = length(y);
+            g = (2 / n) * sum((1:n)' .* y) / sum(y) - (n + 1) / n;
+        end
         function [] = plot_policy(par,sol,sim)   
     %% Plot production function for Skill 1 and Skill 2 at A=1
 
